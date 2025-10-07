@@ -1,0 +1,41 @@
+name: Build & Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP via Workload Identity
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: "projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool-api/providers/github-provider"
+          service_account: "ci-deployer@indixpert-api-training.iam.gserviceaccount.com"
+
+      - name: Configure gcloud
+        run: |
+          gcloud config set project indixpert-api-training
+          gcloud config set run/region asia-south1
+
+      - name: Build & push image (Cloud Build)
+        run: |
+          IMAGE="asia-south1-docker.pkg.dev/indixpert-api-training/cloud-run-source-deploy/fastapi-app:${{ github.sha }}"
+          gcloud builds submit --tag $IMAGE .
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE="asia-south1-docker.pkg.dev/indixpert-api-training/cloud-run-source-deploy/fastapi-app:${{ github.sha }}"
+          gcloud run deploy fastapi-service \
+            --image $IMAGE \
+            --region asia-south1 \
+            --platform managed \
+            --allow-unauthenticated
