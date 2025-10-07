@@ -44,7 +44,7 @@ data=[{
 
 @app.get("/")
 def CheckServerStatus():
-    return {"message":"Indixpert - API- Server is working and active.......","statuscode":200}
+    return {"message":"Indixpert - API- Server is working and active........","statuscode":200}
 
 @app.get("/test")
 def GetStudentRegistration(studentid:str,email:str):
